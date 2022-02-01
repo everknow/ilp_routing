@@ -11,4 +11,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 rustler = "0.23.0"
-
+interledger-ccp = "0.3.0"
+hex = "0.4.0"
+chrono = "0.4.9"
+bytes = "0.4.12"
