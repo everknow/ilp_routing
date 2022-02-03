@@ -1,6 +1,6 @@
-#[rustler::nif]
-fn add(a: i64, b: i64) -> i64 {
-    a + b
+#[rustler::nif(schedule = "DirtyCpu")]
+fn decode<'a>(env: Env<'a>,_bin: Binary) -> NifResult<Term<'a>> {
+    Ok(ok().encode(env))
 }
+rustler::init!("Elixir.Routing", [decode]);
 
-rustler::init!("Elixir.Routing", [add]);

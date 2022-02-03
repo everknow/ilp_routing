@@ -1,18 +1,6 @@
 defmodule IlpRouting do
-  @moduledoc """
-  Documentation for `IlpRouting`.
-  """
 
-  @doc """
-  Hello world.
+  def decode(_), do: :erlang.nif_error(:nif_not_loaded)
+  def encode(_), do: :erlang.nif_error(:nif_not_loaded)
 
-  ## Examples
-
-      iex> IlpRouting.hello()
-      :world
-
-  """
-  def hello do
-    :world
-  end
 end
