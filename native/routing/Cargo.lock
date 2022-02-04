@@ -343,6 +343,8 @@ dependencies = [
  "chrono",
  "hex",
  "interledger-ccp",
+ "interledger-packet",
+ "once_cell",
  "rustler",
 ]
 
