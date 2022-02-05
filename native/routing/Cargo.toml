@@ -11,8 +11,8 @@ crate-type = ["cdylib"]
 
 [dependencies]
 rustler = "0.23.0"
-interledger-ccp = "0.3.0"
-interledger-packet = "0.4.0"
+interledger = { git = "https://github.com/everknow/interledger-rs", branch="dom" }
+regex = { git = "https://github.com/rust-lang/regex" }
 hex = "0.4.0"
 chrono = "0.4.9"
 bytes = "0.4.12"

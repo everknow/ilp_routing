@@ -1,10 +1,10 @@
 use rustler::types::atom::{error}; //, ok};
 use rustler::types::binary::{Binary};
 use rustler::{Encoder, Env, Term, NifResult, MapIterator};
-use interledger_packet::{Packet};
-use interledger_ccp::{RouteControlRequest, Mode};
-use bytes::{BytesMut};
-use std::convert::TryFrom;
+// use interledger::packet::{Packet};
+use interledger::ccp::{RouteControlRequest, Mode};//, RouteUpdateRequest};
+// use bytes::{BytesMut};
+// use std::convert::TryFrom;
 // use once_cell::sync::Lazy;
 // use std::str::FromStr;
 use std::collections::HashMap;
@@ -20,38 +20,38 @@ use std::collections::HashMap;
 // ];
 
 #[rustler::nif(schedule = "DirtyCpu")]
-fn decode<'a>(env: Env<'a>, bin: Binary) -> NifResult<Term<'a>> {
-    match Packet::try_from(BytesMut::from(bin.as_slice())) {
-        Ok(Packet::Prepare(_p)) => {
+fn decode<'a>(env: Env<'a>, _bin: Binary) -> NifResult<Term<'a>> {
+    // match Packet::try_from(BytesMut::from(bin.as_slice())) {
+    //     Ok(Packet::Prepare(_p)) => {
             
-            // let destination = p.destination();
-            // if destination == *CCP_CONTROL_DESTINATION {
-            //     Ok(custom_atoms::control().encode(env)) 
-            // } else if destination == *CCP_UPDATE_DESTINATION {
-            //     Ok(custom_atoms::update().encode(env))
-            // } else {
-                Ok(error().encode(env)) 
-            // }
+    //         // let destination = p.destination();
+    //         // if destination == *CCP_CONTROL_DESTINATION {
+    //         //     Ok(custom_atoms::control().encode(env)) 
+    //         // } else if destination == *CCP_UPDATE_DESTINATION {
+    //         //     Ok(custom_atoms::update().encode(env))
+    //         // } else {
+    //             Ok(error().encode(env)) 
+    //         // }
 
 
-            // match p.destination() {
-            //     Packet::CCP_UPDATE_DESTINATION => {
-            //         Ok(custom_atoms::update().encode(env)) 
-            //     } 
-            //     Packet::CCP_CONTROL_DESTINATION => {
-            //         Ok(custom_atoms::control().encode(env)) 
+    //         // match p.destination() {
+    //         //     Packet::CCP_UPDATE_DESTINATION => {
+    //         //         Ok(custom_atoms::update().encode(env)) 
+    //         //     } 
+    //         //     Packet::CCP_CONTROL_DESTINATION => {
+    //         //         Ok(custom_atoms::control().encode(env)) 
 
-            //     }
+    //         //     }
                 
-            //     _ => {
-            //         Ok(error().encode(env)) 
-            //     }
-            // }
-        }
-        _ => {    
+    //         //     _ => {
+    //         //         Ok(error().encode(env)) 
+    //         //     }
+    //         // }
+    //     }
+    //     _ => {    
             Ok(error().encode(env))
-        }
-    }
+        // }
+    // }
     
     
 }
