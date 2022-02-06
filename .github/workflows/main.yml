@@ -23,12 +23,13 @@ jobs:
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
 
-      - uses: yanzay/notify-telegram@v0.1.0
-        if: always()
+      - name: send default message
+        uses: appleboy/telegram-action@master
+#         if: always()
         with:
-          chat: ${{ secrets.chat }} # user id or channel name secret
+          to: ${{ secrets.chat }} # user id or channel name secret
           token: ${{ secrets.token }} # token secret
-          status: ${{ job.status }} # do not modify this line
+#           status: ${{ job.status }} # do not modify this line
           
           
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
