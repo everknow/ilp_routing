@@ -1,4 +1,4 @@
-use rustler::types::atom::{error, ok};
+use rustler::types::atom::{error};
 use rustler::types::binary::{Binary};
 use rustler::{Encoder, Env, Term, NifResult, ListIterator, Error};
 // use interledger::packet::{Packet};
@@ -65,22 +65,29 @@ fn encode<'a>(env: Env<'a>, arg: Term) -> NifResult<Term<'a>> {
             if "control_request" == t.decode::<String>()? {
                 match m.get("features") {
                     Some(f) => {
-                        let fs :ListIterator = f.decode()?;                                
-                        RouteControlRequest {
-                            features: fs.map(|x| x.decode::<String>()).collect::<NifResult<Vec<String>>>()?,
-                            last_known_epoch: 10,
-                            last_known_routing_table_id: [0,1,2,3,4,5,6,7,8,9,1,2,3,4,5,6],
-                            mode: Mode::Sync
-                        };
-                        // match m.get()
+                        let fs :ListIterator = f.decode()?; 
+                        match m.get("last_known_epoch") {
+                            Some(lke) => {
+                                let p = RouteControlRequest {
+                                    features: fs.map(|x| x.decode::<String>()).collect::<NifResult<Vec<String>>>()?,
+                                    last_known_epoch: lke.decode()?,
+                                    last_known_routing_table_id: [0,1,2,3,4,5,6,7,8,9,1,2,3,4,5,6],
+                                    mode: Mode::Sync
+                                };
+                                Ok(p.to_prepare().as_ref().encode(env))
+                            }
+                            None => {
+                                Err(Error::Term(Box::new("control_request > last_known_epoch missing")))
+                            }
+                        }                               
+
                     }
                     None => {
-
-
+                        Err(Error::Term(Box::new("control_request > features missing")))
                     }
                 }
                 
-                Ok(ok().encode(env))
+               
 
             } else {
                 Err(Error::Term(Box::new("type not recognised")))
