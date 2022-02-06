@@ -1,6 +1,6 @@
-use rustler::types::atom::{error}; //, ok};
+use rustler::types::atom::{error, ok};
 use rustler::types::binary::{Binary};
-use rustler::{Encoder, Env, Term, NifResult, MapIterator};
+use rustler::{Encoder, Env, Term, NifResult, ListIterator, Error};
 // use interledger::packet::{Packet};
 use interledger::ccp::{RouteControlRequest, Mode};//, RouteUpdateRequest};
 // use bytes::{BytesMut};
@@ -8,6 +8,7 @@ use interledger::ccp::{RouteControlRequest, Mode};//, RouteUpdateRequest};
 // use once_cell::sync::Lazy;
 // use std::str::FromStr;
 use std::collections::HashMap;
+use std::boxed::Box;
 // use std::time::{Duration, SystemTime};
 
 // pub static CCP_CONTROL_DESTINATION: Lazy<Address> =
@@ -58,71 +59,111 @@ fn decode<'a>(env: Env<'a>, _bin: Binary) -> NifResult<Term<'a>> {
 
 #[rustler::nif(schedule = "DirtyCpu")]
 fn encode<'a>(env: Env<'a>, arg: Term) -> NifResult<Term<'a>> {
-    
-    match MapIterator::new(arg) {
-        Some(kvs) => {
-            let mut m = HashMap::new();
-            for (k,v) in kvs {
-                if k.is_binary() {
-                    m.insert(k.into_binary().unwrap(), v);
-                } else {
-                    return Ok((error(), "a key is not binary").encode(env))
+    let m = arg.decode::<HashMap<String, Term>>()?;
+    match m.get("type") {
+        Some(t) => {
+            if "control_request" == t.decode::<String>()? {
+                match m.get("features") {
+                    Some(f) => {
+                        let fs :ListIterator = f.decode()?;                                
+                        RouteControlRequest {
+                            features: fs.map(|x| x.decode::<String>()).collect::<NifResult<Vec<String>>>()?,
+                            last_known_epoch: 10,
+                            last_known_routing_table_id: [0,1,2,3,4,5,6,7,8,9,1,2,3,4,5,6],
+                            mode: Mode::Sync
+                        };
+                        // match m.get()
+                    }
+                    None => {
+
+
+                    }
                 }
+                
+                Ok(ok().encode(env))
+
+            } else {
+                Err(Error::Term(Box::new("type not recognised")))
             }
-
-            match m.get(b"type".as_ref()) {
-                Some(t) if t.is_binary() => {
-                    if &t.into_binary().unwrap().as_slice() == &b"prepare".as_slice() {
-                        match m.get(b"data".as_ref()) {
-                            Some(d) if d.is_binary() => {
-                                
-                                let data = RouteControlRequest {
-                                    features: Vec::new(),
-                                    last_known_epoch: 10,
-                                    last_known_routing_table_id: [0,1,2,3,4,5,6,7,8,9,1,2,3,4,5,6],
-                                    mode: Mode::Sync
-
-
-                                };
-
-                                let p = data.to_prepare();
-                                
-                                // let p = PrepareBuilder {
-                                //     destination: CCP_CONTROL_DESTINATION.clone(),
-                                //     amount: 0,
-                                //     expires_at: SystemTime::now() + Duration::from_secs(30),
-                                //     data: &[],
-                                //     execution_condition: &PEER_PROTOCOL_CONDITION,
-                                // }
-                                // .build();
-
-                                Ok(p.as_ref().encode(env))
-                            }
-                            Some(_) => {
-                                Ok((error(), "data val is not binary").encode(env)) 
-                            }
-                            None => {
-                                Ok((error(), "data is not present").encode(env))  
-                            }
-                        }
-                    } else {
-                        Ok((error(), "type value not recognised").encode(env))
-                    }                    
-                }
-                Some(_) => {
-                    Ok((error(), "type val is not binary").encode(env))
-                }
-                None => {
-                    Ok((error(), "type is not present").encode(env))  
-                }
-
-            } 
-            
+            // let fs :ListIterator = ;
         }
         None => {
-            Ok((error(), "argument is not a map").encode(env))
+            Err(Error::Term(Box::new("type missing")))
         }
+
     }
+
+
+    
+
+    // let mut m = HashMap::new();
+    // for (k,v) in kvs {
+    //     if k.is_binary() {
+    //         m.insert(k.into_binary().unwrap(), v);
+    //     } else {
+    //         return Ok((error(), "a key is not binary").encode(env))
+    //     }
+    // }
+
+    //         match m.get(b"type".as_ref()) {
+    //             Some(t) if t.is_binary() => {
+    //                 if &t.into_binary().unwrap().as_slice() == &b"prepare".as_slice() {
+    //                     match m.get(b"features".as_ref()) {
+    //                         Some(f) => {
+    //                             let fs :ListIterator = f.decode()?;
+
+
+    //                             Ok(ok().encode(env))
+    //                         }
+    //                         // Some(d) if d.is_binary() => {
+                                
+    //                         //     let data = RouteControlRequest {
+    //                         //         features: Vec::new(),
+    //                         //         last_known_epoch: 10,
+    //                         //         last_known_routing_table_id: [0,1,2,3,4,5,6,7,8,9,1,2,3,4,5,6],
+    //                         //         mode: Mode::Sync
+
+
+    //                         //     };
+
+    //                         //     let p = data.to_prepare();
+                                
+    //                         //     // let p = PrepareBuilder {
+    //                         //     //     destination: CCP_CONTROL_DESTINATION.clone(),
+    //                         //     //     amount: 0,
+    //                         //     //     expires_at: SystemTime::now() + Duration::from_secs(30),
+    //                         //     //     data: &[],
+    //                         //     //     execution_condition: &PEER_PROTOCOL_CONDITION,
+    //                         //     // }
+    //                         //     // .build();
+
+    //                         //     Ok(p.as_ref().encode(env))
+    //                         // }
+    //                         // Some(_) => {
+    //                         //     Ok((error(), "data val is not binary").encode(env)) 
+    //                         // }
+    //                         None => {
+    //                             Ok((error(), "data is not present").encode(env))  
+    //                         }
+    //                     }
+    //                 } else {
+    //                     Ok((error(), "type value not recognised").encode(env))
+    //                 }                    
+    //             }
+    //             Some(_) => {
+    //                 Ok((error(), "type val is not binary").encode(env))
+    //             }
+    //             None => {
+    //                 Ok((error(), "type is not present").encode(env))  
+    //             }
+
+    //         } 
+            
+    //     }
+    //     None => {
+    //         Ok((error(), "argument is not a map").encode(env))
+    //     }
+    // }
 
 }
 
