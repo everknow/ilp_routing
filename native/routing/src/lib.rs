@@ -57,28 +57,48 @@ fn decode<'a>(env: Env<'a>, _bin: Binary) -> NifResult<Term<'a>> {
     
 }
 
+// #[macro_export]
+macro_rules! err {
+    ( $( $x:expr ),* ) => {
+        {
+            $(
+                Err(Error::Term(Box::new($x)))
+            )*   
+        }
+    };
+}
+macro_rules! error {
+    ( $( $x:expr ),* ) => {
+        {
+            $(
+                Error::Term(Box::new($x))
+            )*   
+        }
+    };
+}
+
 #[rustler::nif(schedule = "DirtyCpu")]
 fn encode<'a>(env: Env<'a>, arg: Term) -> NifResult<Term<'a>> {
-    let m = arg.decode::<HashMap<String, Term>>().or(Err(Error::Term(Box::new("arg not map"))))?;
-    let t = m.get("type").ok_or(Error::Term(Box::new("type missing")))?;
-    match t.decode::<&str>().or(Err(Error::Term(Box::new("type not binary"))))? {
+    let m = arg.decode::<HashMap<String, Term>>().or(err!("arg not map"))?;
+    let t = m.get("type").ok_or(error!("type missing"))?;
+    match t.decode::<&str>().or(err!("type not binary"))? {
         "control_request" => {
-            let f = m.get("features").ok_or(Error::Term(Box::new("control_request > features missing")))?;
-            let lke = m.get("last_known_epoch").ok_or(Error::Term(Box::new("control_request > last_known_epoch missing")))?;
-            let lkrti = m.get("last_known_routing_table_id").ok_or(Error::Term(Box::new("control_request > last_known_routing_table_id missing")))?;
-            let lkrtis = lkrti.decode::<Vec<u8>>().or(Err(Error::Term(Box::new("could not decode last_known_routing_table_id"))))?;
-            let md = m.get("mode").ok_or(Error::Term(Box::new("control_request > mode missing")))?;
-            let u8mode = md.decode::<u8>().or(Err(Error::Term(Box::new("mode not u8"))))?;
+            let f = m.get("features").ok_or(error!("control_request > features missing"))?;
+            let lke = m.get("last_known_epoch").ok_or(error!("control_request > last_known_epoch missing"))?;
+            let lkrti = m.get("last_known_routing_table_id").ok_or(error!("control_request > last_known_routing_table_id missing"))?;
+            let lkrtis = lkrti.decode::<Vec<u8>>().or(err!("could not decode last_known_routing_table_id"))?;
+            let md = m.get("mode").ok_or(error!("control_request > mode missing"))?;
+            let u8mode = md.decode::<u8>().or(err!("mode not u8"))?;
             let p = RouteControlRequest {
-                features: f.decode::<Vec<String>>().or(Err(Error::Term(Box::new("could not decode features list"))))?,
-                last_known_epoch: lke.decode::<u32>().or(Err(Error::Term(Box::new("last_known_epoch not u32"))))?,
-                last_known_routing_table_id: <[u8; ROUTING_TABLE_ID_LEN]>::try_from(lkrtis).or(Err(Error::Term(Box::new("could not decode last_known_routing_table_id"))))?,
-                mode: Mode::try_from(u8mode).or(Err(Error::Term(Box::new("u8mode not valid"))))?
+                features: f.decode::<Vec<String>>().or(err!("could not decode features list"))?,
+                last_known_epoch: lke.decode::<u32>().or(err!("last_known_epoch not u32"))?,
+                last_known_routing_table_id: <[u8; ROUTING_TABLE_ID_LEN]>::try_from(lkrtis).or(err!("could not decode last_known_routing_table_id"))?,
+                mode: Mode::try_from(u8mode).or(err!("u8mode not valid"))?
             };
             Ok(p.to_prepare().as_ref().encode(env))
         }
         _ => {
-            Err(Error::Term(Box::new("type not recognised")))
+            err!("type not recognised")
         }
     }
 
