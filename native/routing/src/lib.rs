@@ -97,6 +97,9 @@ fn encode<'a>(env: Env<'a>, arg: Term) -> NifResult<Term<'a>> {
             };
             Ok(p.to_prepare().as_ref().encode(env))
         }
+        "update_request" => {
+            err!("not implemented")
+        }
         _ => {
             err!("type not recognised")
         }
