@@ -29,6 +29,13 @@ jobs:
         with:
           to: ${{ secrets.chat }} # user id or channel name secret
           token: ${{ secrets.token }} # token secret
+          message: |
+            ${{ github.actor }} created commit:
+            Commit message: ${{ github.event.commits[0].message }}
+            
+            Repository: ${{ github.repository }}
+            
+            See changes: https://github.com/${{ github.repository }}/commit/${{github.sha}}
 #           status: ${{ job.status }} # do not modify this line
           
           
