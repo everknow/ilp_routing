@@ -14,6 +14,7 @@ defmodule IlpRoutingTest do
 
     assert {:error, "control_request > features missing"} = IlpRouting.encode(%{"type" => "control_request"})
 
+
     assert {:error, "arg ******"} = IlpRouting.encode(%{"type" => "control_request", :features => :some})
 
     assert {:error, "could not decode last_known_routing_table_id"} = IlpRouting.encode(%{
@@ -24,13 +25,32 @@ defmodule IlpRoutingTest do
       "mode" => :some
       })
 
-    assert {:error, ""} = IlpRouting.encode(%{
+    assert {:error, "could not **************"} = IlpRouting.encode(%{
       "type" => "control_request",
       "features" => ["hello", "there"],
       "last_known_epoch" => 345345,
       "last_known_routing_table_id" => [0],
       "mode" => 0
       })
+
+      assert {:error, "last_known_epoch not u32"} = IlpRouting.encode(%{
+        "type" => "control_request",
+        "features" => ["Test", "one"],
+        "last_known_epoch" => 79.33,
+        "last_known_routing_table_id" => [0],
+        "mode" => 0
+        })
+
+        assert {:error, "u8mode not valid"} = IlpRouting.encode(%{
+          "type" => "control_request",
+          "features" => ["aa","bb"],
+          "last_known_epoch" => 32,
+          "last_known_routing_table_id" => [0,1,2,3,4,5,6,7,8,9,1,2,3,4,5,6],
+          "mode" => 0
+          })
+
+
+
 
 
   end
