@@ -2,7 +2,7 @@ defmodule IlpRoutingTest do
   use ExUnit.Case
   doctest IlpRouting
 
-  test "encode/1" do
+  test "encode/1 control request" do
 
     assert {:error, "type missing"} = IlpRouting.encode(%{})
 
@@ -49,4 +49,17 @@ defmodule IlpRoutingTest do
     }))
 
   end
+
+  test "encode/1 update request" do
+
+    assert is_list(IlpRouting.encode(%{
+      "type" => "update_request",
+      "features" => ["aa","bb"],
+      "last_known_epoch" => 32,
+      "last_known_routing_table_id" => [0,1,2,3,4,5,6,7,8,9,1,2,3,4,5,6],
+      "mode" => 0
+    }))
+
+  end
+
 end
