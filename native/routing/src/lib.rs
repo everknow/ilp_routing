@@ -79,7 +79,7 @@ macro_rules! error {
 
 #[rustler::nif(schedule = "DirtyCpu")]
 fn encode<'a>(env: Env<'a>, arg: Term) -> NifResult<Term<'a>> {
-    let m = arg.decode::<HashMap<String, Term>>().or(err!("arg ******"))?;
+    let m = arg.decode::<HashMap<String, Term>>().or(err!("could not decode arg to map<String,Term>"))?;
     let t = m.get("type").ok_or(error!("type missing"))?;
     match t.decode::<&str>().or(err!("type not binary"))? {
         "control_request" => {
@@ -94,7 +94,7 @@ fn encode<'a>(env: Env<'a>, arg: Term) -> NifResult<Term<'a>> {
             let p = RouteControlRequest {
                 features: f.decode::<Vec<String>>().or(err!("could not decode features list"))?,
                 last_known_epoch: lke.decode::<u32>().or(err!("last_known_epoch not u32"))?,
-                last_known_routing_table_id: <[u8; ROUTING_TABLE_ID_LEN]>::try_from(lkrtis).or(err!("could not **************"))?,
+                last_known_routing_table_id: <[u8; ROUTING_TABLE_ID_LEN]>::try_from(lkrtis).or(err!("could not convert last_known_routing_table_id to list of bytes of size ROUTING_TABLE_ID_LEN"))?,
                 mode: Mode::try_from(u8mode).or(err!("u8mode not valid"))?
             };
             Ok(p.to_prepare().as_ref().encode(env))
