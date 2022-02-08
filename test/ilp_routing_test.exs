@@ -54,7 +54,7 @@ defmodule IlpRoutingTest do
 
     assert is_list(IlpRouting.encode(%{
       "type" => "update_request",
-      "features" => ["aa","bb"],
+      "routing_table_id" => ["aa","bb"],
       "last_known_epoch" => 32,
       "last_known_routing_table_id" => [0,1,2,3,4,5,6,7,8,9,1,2,3,4,5,6],
       "mode" => 0

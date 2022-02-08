@@ -111,21 +111,35 @@ fn encode<'a>(env: Env<'a>, arg: Term) -> NifResult<Term<'a>> {
         
         "update_request" => {
             // get fields
+            let rti = m.get("routing_table_id").ok_or(error!("outing_table_id missing"))?; // routing_table_id
+            let cei = m.get("current_epoch_index").ok_or(error!("the current epoch index is missing"))?; // current_epoch_index
+            let fei = m.get("lfrom_epoch_index").ok_or(error!("the index from the epoch is missing"))?; // from_epoch_index
+            let tei = m.get("to_epoch_index").ok_or(error!("the index to the epoch is missing"))?; // to_epoch_index
+            let hdt = m.get("hold_down_time").ok_or(error!("the hold_down_time is missing"))?; // hold_down_time
+            let s = m.get("speaker").ok_or(error!("speaker is missing"))?; // speaker
+            let nr = m.get("new_routes").ok_or(error!("new routes is missing"))?; // new_routes
+            let wr = m.get("mode").ok_or(error!("the withdrawn routes is missing"))?; // withdrawn_routes
 
             // transform
-            let routing_table_id = [0,1,2,3,4,5,6,7,8,9,1,2,3,4,5,6];
-            let current_epoch_index = 0;
-            let from_epoch_index = 0;
+
+            let routing_table_id = cei.decode::<u32>().or(err!("could not decode the routing_table_id"))?;
+            let current_epoch_index = cei.decode::<u32>().or(err!("could not decode the routing_table_id"))?;
+            let from_epoch_index = fei.decode::<u32>().or(err!("could not decode the index from the epoch"))?;
+            let to_epoch_index = tei.decode::<u32>().or(err!("could not decode the index to the epoch"))?;
+            let hold_down_time = hdt.decode::<u32>().or(err!("could not decode the hold_down_time"))?;
+            let speaker = s.decode::<u32>().or(err!("could not decode the speaker"))?;
+            let new_routes = nr.decode::<Vec<String>>().or(err!("could not decode new_routes"))?;
+            let withdrawn_routes = wr.decode::<Vec<String>>().or(err!("could not decode withdrawn_routes"))?;
 
             let p = RouteUpdateRequest {
                 routing_table_id,
                 current_epoch_index,
                 from_epoch_index,
-                to_epoch_index: 0,
-                hold_down_time: 0,
-                speaker: Address::from_str("test.alice.1234.5789").unwrap(),
-                new_routes: Vec::new(),
-                withdrawn_routes: Vec::new(),
+                to_epoch_index,
+                hold_down_time,
+                speaker,
+                new_routes,
+                withdrawn_routes,
             };
             Ok(p.to_prepare().as_ref().encode(env))
         }
