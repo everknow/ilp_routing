@@ -124,15 +124,20 @@ fn encode<'a>(env: Env<'a>, arg: Term) -> NifResult<Term<'a>> {
 
             let rtis = rti.decode::<Vec< u8 >>().or(err!("could not decode the routing_table_id"))?;// routing_table_id
             let speakerstr = s.decode::<&str>().or(err!("could not decode speaker"))?;
-            let nrms = nr.decode::<Vec<HashMap<String, Term>>>().unwrap();
+            let nrms = nr.decode::<Vec<HashMap<String, Term>>>().or(err!("could not decode new routes map prefix"))?; 
             let mut nrs = Vec::with_capacity(nrms.len());
+
             for nrm in nrms {
-                let nrmp = nrm.get("prefix").ok_or(error!("update_request > new_routes > prefix missing"))?; // routing_table_id
+                let nrmprefix = nrm.get("prefix").ok_or(error!("update_request > new_routes > prefix missing"))?; // new routes map prefix
+                let nrmpath  = nrm.get("path").ok_or(error!("update_request > new_routes > path missing"))?; // new routes map path
+                let nrmauth = nrm.get("auth").ok_or(error!("update_request > new_routes > auth missing"))?; // new routes map auth
+                let nrmprops  = nrm.get("props").ok_or(error!("update_request > new_routes > props missing"))?; // new routes map props
                 
 
+                
             }
             
-            let routing_table_id = <[u8; ROUTING_TABLE_ID_LEN]>::try_from(rtis).or(err!("could not decode the routing table id "))?;
+            
             let current_epoch_index = cei.decode::<u32>().or(err!("could not decode the routing_table_id"))?;
             let from_epoch_index = fei.decode::<u32>().or(err!("could not decode the index from the epoch"))?;
             let to_epoch_index = tei.decode::<u32>().or(err!("could not decode the index to the epoch"))?;
@@ -140,6 +145,8 @@ fn encode<'a>(env: Env<'a>, arg: Term) -> NifResult<Term<'a>> {
             let speaker = Address::from_str(speakerstr).or(err!("could not convert speaker into address"))?;
             let new_routes = nr.decode::<Vec<HashMap<String, Term>>>().unwrap();
             let withdrawn_routes = wr.decode::<Vec<String>>().or(err!("could not decode withdrawn_routes"))?;
+
+            let routing_table_id = <[u8; ROUTING_TABLE_ID_LEN]>::try_from(rtis).or(err!("could not decode the routing_table_id "))?;
 
             let p = RouteUpdateRequest {
                 routing_table_id,
