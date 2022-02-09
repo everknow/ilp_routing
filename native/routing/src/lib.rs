@@ -111,7 +111,7 @@ fn encode<'a>(env: Env<'a>, arg: Term) -> NifResult<Term<'a>> {
         
         "update_request" => {
             // get fields
-            let rti = m.get("routing_table_id").ok_or(error!("update_request > outing_table_id missing"))?; // routing_table_id
+            let rti = m.get("routing_table_id").ok_or(error!("update_request > routing_table_id missing"))?; // routing_table_id
             let cei = m.get("current_epoch_index").ok_or(error!("update_request > the current epoch index is missing"))?; // current_epoch_index
             let fei = m.get("lfrom_epoch_index").ok_or(error!("update_request > the index from the epoch is missing"))?; // from_epoch_index
             let tei = m.get("to_epoch_index").ok_or(error!("update_request > the index to the epoch is missing"))?; // to_epoch_index
@@ -122,13 +122,15 @@ fn encode<'a>(env: Env<'a>, arg: Term) -> NifResult<Term<'a>> {
 
             // transform
 
-            let rtit = rti.decode::<Vec< u8 >>().or(err!("could not decode the routing_table_id"))?;// routing_table_id trasform
-            let routing_table_id = <[u8; ROUTING_TABLE_ID_LEN]>::try_from(rtit).or(err!("could not decode the routing table id "))?;
+            let rtis = rti.decode::<Vec< u8 >>().or(err!("could not decode the routing_table_id"))?;// routing_table_id
+            let speakerstr = s.decode::<&str>().or(err!("could not decode speaker"))?;
+            
+            let routing_table_id = <[u8; ROUTING_TABLE_ID_LEN]>::try_from(rtis).or(err!("could not decode the routing table id "))?;
             let current_epoch_index = cei.decode::<u32>().or(err!("could not decode the routing_table_id"))?;
             let from_epoch_index = fei.decode::<u32>().or(err!("could not decode the index from the epoch"))?;
             let to_epoch_index = tei.decode::<u32>().or(err!("could not decode the index to the epoch"))?;
             let hold_down_time = hdt.decode::<u32>().or(err!("could not decode the hold_down_time"))?;
-            //let speaker = s.decode::<u32>().or(err!("could not decode the speaker"))?;
+            let speaker = Address::from_str(speakerstr).or(err!("could not convert speaker into address"))?;
             let new_routes = nr.decode::<String>().or(err!("could not decode new_routes"))?;
             let withdrawn_routes = wr.decode::<Vec<String>>().or(err!("could not decode withdrawn_routes"))?;
 
