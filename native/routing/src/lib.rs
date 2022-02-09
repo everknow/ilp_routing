@@ -2,7 +2,7 @@ use rustler::types::atom::{error};
 use rustler::types::binary::{Binary};
 use rustler::{Encoder, Env, Term, NifResult, Error};
 use interledger::packet::{Address};
-use interledger::ccp::{RouteControlRequest, Mode, ROUTING_TABLE_ID_LEN, RouteUpdateRequest};
+use interledger::ccp::{RouteControlRequest, Mode, ROUTING_TABLE_ID_LEN, RouteUpdateRequest, Route, RouteProp};
 // use bytes::{BytesMut};
 use std::convert::TryFrom;
 // use once_cell::sync::Lazy;
@@ -111,30 +111,55 @@ fn encode<'a>(env: Env<'a>, arg: Term) -> NifResult<Term<'a>> {
         
         "update_request" => {
             // get fields
-            let rti = m.get("routing_table_id").ok_or(error!("update_request > routing_table_id missing"))?; // routing_table_id
-            let cei = m.get("current_epoch_index").ok_or(error!("update_request > the current epoch index is missing"))?; // current_epoch_index
-            let fei = m.get("lfrom_epoch_index").ok_or(error!("update_request > the index from the epoch is missing"))?; // from_epoch_index
-            let tei = m.get("to_epoch_index").ok_or(error!("update_request > the index to the epoch is missing"))?; // to_epoch_index
-            let hdt = m.get("hold_down_time").ok_or(error!("update_request > the hold_down_time is missing"))?; // hold_down_time
-            let s = m.get("speaker").ok_or(error!("update_request > speaker is missing"))?; // speaker
-            let nr = m.get("new_routes").ok_or(error!("update_request > new routes is missing"))?; // new_routes
-            let wr = m.get("mode").ok_or(error!("update_request > the withdrawn routes is missing"))?; // withdrawn_routes
+            let rti = m.get("routing_table_id").ok_or(error!("update_request > routing_table_id missing"))?;
+            let cei = m.get("current_epoch_index").ok_or(error!("update_request > the current epoch index is missing"))?;
+            let fei = m.get("lfrom_epoch_index").ok_or(error!("update_request > the index from the epoch is missing"))?;
+            let tei = m.get("to_epoch_index").ok_or(error!("update_request > the index to the epoch is missing"))?;
+            let hdt = m.get("hold_down_time").ok_or(error!("update_request > the hold_down_time is missing"))?;
+            let s = m.get("speaker").ok_or(error!("update_request > speaker is missing"))?;
+            let nr = m.get("new_routes").ok_or(error!("update_request > new routes is missing"))?;
+            let wr = m.get("mode").ok_or(error!("update_request > the withdrawn routes is missing"))?;
 
             // transform
 
-            let rtis = rti.decode::<Vec< u8 >>().or(err!("could not decode the routing_table_id"))?;// routing_table_id
+            let rtis = rti.decode::<Vec< u8 >>().or(err!("could not decode the routing_table_id"))?;
             let speakerstr = s.decode::<&str>().or(err!("could not decode speaker"))?;
-            let nrms = nr.decode::<Vec<HashMap<String, Term>>>().or(err!("could not decode new routes map prefix"))?; 
-            let mut nrs = Vec::with_capacity(nrms.len());
-
+            let nrms = nr.decode::<Vec<HashMap<String, Term>>>().or(err!("could not decode new routes map"))?; 
+            let mut new_routes = Vec::with_capacity(nrms.len());
             for nrm in nrms {
-                let nrmprefix = nrm.get("prefix").ok_or(error!("update_request > new_routes > prefix missing"))?; // new routes map prefix
-                let nrmpath  = nrm.get("path").ok_or(error!("update_request > new_routes > path missing"))?; // new routes map path
-                let nrmauth = nrm.get("auth").ok_or(error!("update_request > new_routes > auth missing"))?; // new routes map auth
-                let nrmprops  = nrm.get("props").ok_or(error!("update_request > new_routes > props missing"))?; // new routes map props
+                let nr_pre = nrm.get("prefix").ok_or(error!("update_request > new_routes > prefix missing"))?;
+                let nr_pat  = nrm.get("path").ok_or(error!("update_request > new_routes > path missing"))?;
+                let nr_aut = nrm.get("auth").ok_or(error!("update_request > new_routes > auth missing"))?;
+                let nr_prs  = nrm.get("props").ok_or(error!("update_request > new_routes > props missing"))?;
                 
+                let prefix = nr_pre.decode::<String>().or(err!("could not decode new_routes > prefix"))?;
+                let path = nr_pre.decode::<Vec<String>>().or(err!("could not decode new_routes > path"))?;
+                //auth
 
+                let nr_prms = nr_prs.decode::<Vec<HashMap<String, Term>>>().or(err!("could not decode new_routes > props map"))?;
                 
+                let mut props = Vec::with_capacity(nr_prms.len());
+                for nr_prm in nr_prms {
+                    let is_opt = nr_prm.get("is_optional").ok_or(error!("update_request > new_routes > route_props > is_optional missing"))?;
+
+                    let is_optional = nr_pre.decode::<bool>().or(err!("could not decode new_routes > route_props is_optional"))?;
+
+                    props.push(RouteProp {
+                        is_optional,
+                        is_transitive,
+                        is_partial,
+                        id,
+                        is_utf8,
+                        value,
+                    })
+                }
+
+                nrs.push(Route {
+                    prefix,
+                    path,
+                    auth,
+                    props,
+                })
             }
             
             
@@ -143,7 +168,6 @@ fn encode<'a>(env: Env<'a>, arg: Term) -> NifResult<Term<'a>> {
             let to_epoch_index = tei.decode::<u32>().or(err!("could not decode the index to the epoch"))?;
             let hold_down_time = hdt.decode::<u32>().or(err!("could not decode the hold_down_time"))?;
             let speaker = Address::from_str(speakerstr).or(err!("could not convert speaker into address"))?;
-            let new_routes = nr.decode::<Vec<HashMap<String, Term>>>().unwrap();
             let withdrawn_routes = wr.decode::<Vec<String>>().or(err!("could not decode withdrawn_routes"))?;
 
             let routing_table_id = <[u8; ROUTING_TABLE_ID_LEN]>::try_from(rtis).or(err!("could not decode the routing_table_id "))?;
