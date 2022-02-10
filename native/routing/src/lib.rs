@@ -140,8 +140,8 @@ fn encode<'a>(env: Env<'a>, arg: Term) -> NifResult<Term<'a>> {
                 // transform
 
                 let prefix = nr_pre.decode::<String>().or(err!("could not decode new_routes > prefix"))?;
-                let path = nr_pre.decode::<Vec<String>>().or(err!("could not decode new_routes > path"))?;
-                let auths = nr_pre.decode::<Vec<u8>>().or(err!("could not decode new_routes > auth"))?;
+                let path = nr_pat.decode::<Vec<String>>().or(err!("could not decode new_routes > path"))?;
+                let auths = nr_aut.decode::<Vec<u8>>().or(err!("could not decode new_routes > auth"))?;
                 let auth =  <[u8; AUTH_LEN]>::try_from(auths).or(err!("could not convert auth to list of bytes of size ROUTING_TABLE_ID_LEN"))?; //Here
                 let nr_prms = nr_prs.decode::<Vec<HashMap<String, Term>>>().or(err!("could not decode new_routes > props map"))?;
                 
@@ -159,13 +159,13 @@ fn encode<'a>(env: Env<'a>, arg: Term) -> NifResult<Term<'a>> {
 
                     // transform
 
-                    let is_optional = nr_pre.decode::<bool>().or(err!("could not decode new_routes > route_props >is_optional"))?;
-                    let is_partial = nr_pre.decode::<bool>().or(err!("could not decode new_routes > route_props > is_partial"))?;
-                    let is_utf8 = nr_pre.decode::<bool>().or(err!("could not decode new_routes > route_props > is_utf8"))?;
-                    let is_transitive = nr_pre.decode::<bool>().or(err!("could not decode new_routes > route_props > is_transitive"))?;
+                    let is_optional = is_opt.decode::<bool>().or(err!("could not decode new_routes > route_props >is_optional"))?;
+                    let is_partial = is_par.decode::<bool>().or(err!("could not decode new_routes > route_props > is_partial"))?;
+                    let is_utf8 = is_utf8.decode::<bool>().or(err!("could not decode new_routes > route_props > is_utf8"))?;
+                    let is_transitive = is_tran.decode::<bool>().or(err!("could not decode new_routes > route_props > is_transitive"))?;
                     let valu = val.decode::<Vec<u8>>().or(err!("could not decode new_routes > route_props > value"))?; 
                     let value = Bytes::copy_from_slice(valu.as_slice());
-                    let id = nr_pre.decode::<u16>().or(err!("could not decode new_routes > route_props > id"))?;
+                    let id = an_id.decode::<u16>().or(err!("could not decode new_routes > route_props > id"))?;
 
                     props.push(RouteProp {
                         is_optional,
