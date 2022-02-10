@@ -52,12 +52,48 @@ defmodule IlpRoutingTest do
 
   test "encode/1 update request" do
 
-    assert is_list(IlpRouting.encode(%{
-      "type" => "update_request",
-      "routing_table_id" => ["aa","bb"],
-      "last_known_epoch" => 32,
-      "last_known_routing_table_id" => [0,1,2,3,4,5,6,7,8,9,1,2,3,4,5,6],
-      "mode" => 0
+    assert is_list(IlpRouting.encode(:update_request, %{
+      "routing_table_id" => :a,
+      "current_epoch_index" => :b,
+      "lfrom_epoch_index" => :b,
+      "to_epoch_index" => :b,
+      "hold_down_time" => :b,
+      "speaker" => :b,
+      "new_routes" => [
+        %{
+
+        # let nr_pre = nrm.get("prefix").ok_or(error!("update_request > new_routes > prefix missing"))?;
+          "path" => :a,
+        # let nr_aut = nrm.get("auth").ok_or(error!("update_request > new_routes > auth missing"))?;
+          "props" => [
+            %{
+
+            },
+            %{
+
+            }
+          ]
+        },
+
+        %{
+
+          # let nr_pre = nrm.get("prefix").ok_or(error!("update_request > new_routes > prefix missing"))?;
+            "path" => :a,
+          # let nr_aut = nrm.get("auth").ok_or(error!("update_request > new_routes > auth missing"))?;
+            "props" => [
+              %{
+
+              },
+              %{
+
+              }
+            ]
+          }
+
+
+      ],
+      "mode" => :b,
+
     }))
 
   end
