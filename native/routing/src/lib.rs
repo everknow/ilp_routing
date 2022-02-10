@@ -2,8 +2,8 @@ use rustler::types::atom::{error};
 use rustler::types::binary::{Binary};
 use rustler::{Encoder, Env, Term, NifResult, Error};
 use interledger::packet::{Address};
-use interledger::ccp::{RouteControlRequest, Mode, ROUTING_TABLE_ID_LEN, RouteUpdateRequest, Route, RouteProp};
-// use bytes::{BytesMut};
+use interledger::ccp::{RouteControlRequest, Mode, ROUTING_TABLE_ID_LEN, RouteUpdateRequest, Route, RouteProp, AUTH_LEN};
+use bytes:: Bytes;
 use std::convert::TryFrom;
 // use once_cell::sync::Lazy;
 use std::str::FromStr;
@@ -125,24 +125,47 @@ fn encode<'a>(env: Env<'a>, arg: Term) -> NifResult<Term<'a>> {
             let rtis = rti.decode::<Vec< u8 >>().or(err!("could not decode the routing_table_id"))?;
             let speakerstr = s.decode::<&str>().or(err!("could not decode speaker"))?;
             let nrms = nr.decode::<Vec<HashMap<String, Term>>>().or(err!("could not decode new routes map"))?; 
+
             let mut new_routes = Vec::with_capacity(nrms.len());
+
             for nrm in nrms {
+
+                 // get fields
+
                 let nr_pre = nrm.get("prefix").ok_or(error!("update_request > new_routes > prefix missing"))?;
                 let nr_pat  = nrm.get("path").ok_or(error!("update_request > new_routes > path missing"))?;
                 let nr_aut = nrm.get("auth").ok_or(error!("update_request > new_routes > auth missing"))?;
                 let nr_prs  = nrm.get("props").ok_or(error!("update_request > new_routes > props missing"))?;
-                
+
+                // transform
+
                 let prefix = nr_pre.decode::<String>().or(err!("could not decode new_routes > prefix"))?;
                 let path = nr_pre.decode::<Vec<String>>().or(err!("could not decode new_routes > path"))?;
-                //auth
-
+                let auths = nr_pre.decode::<Vec<u8>>().or(err!("could not decode new_routes > auth"))?;
+                let auth =  <[u8; AUTH_LEN]>::try_from(auths).or(err!("could not convert auth to list of bytes of size ROUTING_TABLE_ID_LEN"))?; //Here
                 let nr_prms = nr_prs.decode::<Vec<HashMap<String, Term>>>().or(err!("could not decode new_routes > props map"))?;
                 
                 let mut props = Vec::with_capacity(nr_prms.len());
                 for nr_prm in nr_prms {
-                    let is_opt = nr_prm.get("is_optional").ok_or(error!("update_request > new_routes > route_props > is_optional missing"))?;
 
-                    let is_optional = nr_pre.decode::<bool>().or(err!("could not decode new_routes > route_props is_optional"))?;
+                    // get fields
+
+                    let is_opt = nr_prm.get("is_optional").ok_or(error!("update_request > new_routes > route_props > is_optional missing"))?;
+                    let is_par = nr_prm.get("is_partial").ok_or(error!("update_request > new_routes > route_props > is_partial missing"))?;
+                    let is_utf8 = nr_prm.get("is_utf8").ok_or(error!("update_request > new_routes > route_props > is_utf8 missing"))?;
+                    let is_tran = nr_prm.get("is_transitive").ok_or(error!("update_request > new_routes > route_props > is_transitive missing"))?;
+                    let val = nr_prm.get("value").ok_or(error!("update_request > new_routes > route_props > value missing"))?;
+                    let an_id = nr_prm.get("id").ok_or(error!("update_request > new_routes > route_props > id missing"))?;
+
+                    // transform
+
+                    let is_optional = nr_pre.decode::<bool>().or(err!("could not decode new_routes > route_props >is_optional"))?;
+                    let is_partial = nr_pre.decode::<bool>().or(err!("could not decode new_routes > route_props > is_partial"))?;
+                    let is_utf8 = nr_pre.decode::<bool>().or(err!("could not decode new_routes > route_props > is_utf8"))?;
+                    let is_transitive = nr_pre.decode::<bool>().or(err!("could not decode new_routes > route_props > is_transitive"))?;
+                    let valu = val.decode::<Vec<u8>>().or(err!("could not decode new_routes > route_props > value"))?; 
+                    let value = Bytes::copy_from_slice(valu.as_slice());
+                    let id = nr_pre.decode::<u16>().or(err!("could not decode new_routes > route_props > id"))?;
 
                     props.push(RouteProp {
                         is_optional,
@@ -154,7 +177,7 @@ fn encode<'a>(env: Env<'a>, arg: Term) -> NifResult<Term<'a>> {
                     })
                 }
 
-                nrs.push(Route {
+                new_routes.push(Route {
                     prefix,
                     path,
                     auth,
