@@ -52,24 +52,35 @@ defmodule IlpRoutingTest do
 
   test "encode/1 update request" do
 
-    assert is_list(IlpRouting.encode(:update_request, %{
-      "routing_table_id" => :a,
-      "current_epoch_index" => :b,
-      "lfrom_epoch_index" => :b,
-      "to_epoch_index" => :b,
-      "hold_down_time" => :b,
-      "speaker" => :b,
+    assert is_list(IlpRouting.encode(%{
+      "type" => "update_request",
+      "routing_table_id" => [0,1,2,3,4,5,6,7,8,9,1,2,3,4,5,6],
+      "current_epoch_index" => 30,
+      "lfrom_epoch_index" => 12,
+      "to_epoch_index" => 20,
+      "hold_down_time" => 3000,
+      "speaker" => "example.aa",
       "new_routes" => [
         %{
-
-        # let nr_pre = nrm.get("prefix").ok_or(error!("update_request > new_routes > prefix missing"))?;
-          "path" => :a,
-        # let nr_aut = nrm.get("auth").ok_or(error!("update_request > new_routes > auth missing"))?;
+          "prefix"=> "example.Prefix-Example-01",
+          "path"=> ["example.some-prefix-test01", "example.some-prefix-test02", "example.some-prefix-test03"],
+          "auth"=> [0,1,2,3,4,5,6,7,8,9,1,2,3,4,5,6,0,1,2,3,4,5,6,7,8,9,1,2,3,4,5,6],
           "props" => [
             %{
-
+              "is_optional"=> false,
+              "is_transitive"=> true,
+              "is_partial"=> true,
+              "id"=> 1111,
+              "is_utf8"=> true,
+              "value" => "test",
             },
             %{
+              "is_optional" => false,
+              "is_partial" => false,
+              "is_utf8" => false,
+              "is_transitive" => false,
+              "value" => "prop2",
+              "id" => 7777,
 
             }
           ]
@@ -77,22 +88,32 @@ defmodule IlpRoutingTest do
 
         %{
 
-          # let nr_pre = nrm.get("prefix").ok_or(error!("update_request > new_routes > prefix missing"))?;
-            "path" => :a,
-          # let nr_aut = nrm.get("auth").ok_or(error!("update_request > new_routes > auth missing"))?;
-            "props" => [
+          "prefix"=> "example.Prefix-Example-02",
+          "path"=> ["example.some-prefix-test03", "example.some-prefix-test04", "example.some-prefix-test05"],
+          "auth"=> [0,1,2,3,4,5,6,7,8,9,1,2,3,4,5,6,0,1,2,3,4,5,6,7,8,9,1,2,3,4,5,6],
+          "props" => [
               %{
-
+                "is_optional"=> false,
+                "is_transitive"=> true,
+                "is_partial"=> true,
+                "id"=> 1111,
+                "is_utf8"=> true,
+                "value" => "test test test",
               },
               %{
-
+                "is_optional" => false,
+                "is_partial" => false,
+                "is_utf8" => false,
+                "is_transitive" => false,
+                "value" => "prop2",
+                "id" => 7777,
               }
             ]
           }
 
 
       ],
-      "mode" => :b,
+      "withdrawn_routes" => ["example.some-prefix-test03", "example.some-prefix-test04", "example.some-prefix-test05"],
 
     }))
 

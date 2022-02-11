@@ -118,7 +118,7 @@ fn encode<'a>(env: Env<'a>, arg: Term) -> NifResult<Term<'a>> {
             let hdt = m.get("hold_down_time").ok_or(error!("update_request > the hold_down_time is missing"))?;
             let s = m.get("speaker").ok_or(error!("update_request > speaker is missing"))?;
             let nr = m.get("new_routes").ok_or(error!("update_request > new routes is missing"))?;
-            let wr = m.get("mode").ok_or(error!("update_request > the withdrawn routes is missing"))?;
+            let wr = m.get("withdrawn_routes").ok_or(error!("update_request > the withdrawn routes is missing"))?;
 
             // transform
 
@@ -163,8 +163,8 @@ fn encode<'a>(env: Env<'a>, arg: Term) -> NifResult<Term<'a>> {
                     let is_partial = is_par.decode::<bool>().or(err!("could not decode new_routes > route_props > is_partial"))?;
                     let is_utf8 = is_utf8.decode::<bool>().or(err!("could not decode new_routes > route_props > is_utf8"))?;
                     let is_transitive = is_tran.decode::<bool>().or(err!("could not decode new_routes > route_props > is_transitive"))?;
-                    let valu = val.decode::<Vec<u8>>().or(err!("could not decode new_routes > route_props > value"))?; 
-                    let value = Bytes::copy_from_slice(valu.as_slice());
+                    let valu = val.into_binary().or(err!("expected valu to be binary"))?.as_slice(); 
+                    let value = Bytes::copy_from_slice(valu);
                     let id = an_id.decode::<u16>().or(err!("could not decode new_routes > route_props > id"))?;
 
                     props.push(RouteProp {
