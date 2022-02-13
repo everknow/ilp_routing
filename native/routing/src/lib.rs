@@ -1,9 +1,8 @@
-use rustler::types::atom::{error};
 use rustler::types::binary::{Binary};
 use rustler::{Encoder, Env, Term, NifResult, Error};
-use interledger::packet::{Address};
+use interledger::packet::{Packet, Address};
 use interledger::ccp::{RouteControlRequest, Mode, ROUTING_TABLE_ID_LEN, RouteUpdateRequest, Route, RouteProp, AUTH_LEN};
-use bytes:: Bytes;
+use bytes::{Bytes, BytesMut};
 use std::convert::TryFrom;
 // use once_cell::sync::Lazy;
 use std::str::FromStr;
@@ -19,43 +18,6 @@ use std::boxed::Box;
 //     102, 104, 122, 173, 248, 98, 189, 119, 108, 143, 193, 139, 142, 159, 142, 32, 8, 151, 20, 133,
 //     110, 226, 51, 179, 144, 42, 89, 29, 13, 95, 41, 37,
 // ];
-
-#[rustler::nif(schedule = "DirtyCpu")]
-fn decode<'a>(env: Env<'a>, _bin: Binary) -> NifResult<Term<'a>> {
-    // match Packet::try_from(BytesMut::from(bin.as_slice())) {
-    //     Ok(Packet::Prepare(_p)) => {
-            
-    //         // let destination = p.destination();
-    //         // if destination == *CCP_CONTROL_DESTINATION {
-    //         //     Ok(custom_atoms::control().encode(env)) 
-    //         // } else if destination == *CCP_UPDATE_DESTINATION {
-    //         //     Ok(custom_atoms::update().encode(env))
-    //         // } else {
-    //             Ok(error().encode(env)) 
-    //         // }
-
-
-    //         // match p.destination() {
-    //         //     Packet::CCP_UPDATE_DESTINATION => {
-    //         //         Ok(custom_atoms::update().encode(env)) 
-    //         //     } 
-    //         //     Packet::CCP_CONTROL_DESTINATION => {
-    //         //         Ok(custom_atoms::control().encode(env)) 
-
-    //         //     }
-                
-    //         //     _ => {
-    //         //         Ok(error().encode(env)) 
-    //         //     }Address
-    //         // }
-    //     }
-    //     _ => {    
-            Ok(error().encode(env))
-        // }
-    // }
-    
-    
-}
 
 // #[macro_export]
 macro_rules! err {
@@ -76,6 +38,51 @@ macro_rules! error {
         }
     };
 }
+
+
+#[rustler::nif(schedule = "DirtyCpu")]
+fn decode<'a>(env: Env<'a>, bin: Binary) -> NifResult<Term<'a>> {
+    match Packet::try_from(BytesMut::from(bin.as_slice())) {
+        Ok(Packet::Prepare(_p)) => {
+            err!("it is actually correct")
+        }
+        _ => {    
+            err!("could not decode")
+        }
+    }
+    
+    
+}
+
+
+
+
+    //         // let destination = p.destination();
+    //         // if destination == *CCP_CONTROL_DESTINATION {
+    //         //     Ok(custom_atoms::control().encode(env)) 
+    //         // } else if destination == *CCP_UPDATE_DESTINATION {
+    //         //     Ok(custom_atoms::update().encode(env))
+    //         // } else {
+    //             Ok(error().encode(env)) 
+            // }
+
+
+    //         // match p.destination() {
+    //         //     Packet::CCP_UPDATE_DESTINATION => {
+    //         //         Ok(custom_atoms::update().encode(env)) 
+    //         //     } 
+    //         //     Packet::CCP_CONTROL_DESTINATION => {
+    //         //         Ok(custom_atoms::control().encode(env)) 
+
+    //         //     }
+                
+    //         //     _ => {
+    //         //         Ok(error().encode(env)) 
+    //         //     }Address
+    //         // }
+    //     }
+
+
 
 #[rustler::nif(schedule = "DirtyCpu")]
 fn encode<'a>(env: Env<'a>, arg: Term) -> NifResult<Term<'a>> {

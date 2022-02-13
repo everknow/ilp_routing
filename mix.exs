@@ -4,6 +4,7 @@ defmodule IlpRouting.MixProject do
   def project do
     [
       app: :ilp_routing,
+      elixirc_paths: elixirc_paths(Mix.env()),
       version: "0.1.0",
       elixir: "~> 1.10",
       start_permanent: Mix.env() == :prod,
@@ -17,6 +18,10 @@ defmodule IlpRouting.MixProject do
       extra_applications: [:logger]
     ]
   end
+
+  defp elixirc_paths(:test), do: ["lib", "test"]
+  defp elixirc_paths(:dev), do: ["lib", "test"]
+  defp elixirc_paths(_), do: ["lib"]
 
   # Run "mix help deps" to learn about dependencies.
   defp deps do
