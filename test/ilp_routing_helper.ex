@@ -1,5 +1,13 @@
 defmodule IlpRoutingHelper do
 
+  def control_request, do: %{
+    "type" => "control_request",
+    "features" => ["aa","bb"],
+    "last_known_epoch" => 32,
+    "last_known_routing_table_id" => [0,1,2,3,4,5,6,7,8,9,1,2,3,4,5,6],
+    "mode" => 0
+  }
+
   def update_request, do: %{
     "type" => "update_request",
     "routing_table_id" => [0,1,2,3,4,5,6,7,8,9,1,2,3,4,5,6],

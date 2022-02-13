@@ -46,7 +46,15 @@ fn decode<'a>(env: Env<'a>, bin: Binary) -> NifResult<Term<'a>> {
         Ok(Packet::Prepare(p)) => {
             let destination = p.destination();
             if destination.eq("peer.route.control".as_bytes()) {
-                Ok(custom_atoms::control().encode(env)) 
+                let rcr = RouteControlRequest::try_from(&p).or(err!("could not convert prepare into RouteControlRequest"))?;
+                let mut h = HashMap::new();
+                h.insert("type", "control_request".encode(env));
+                h.insert("features", rcr.features.encode(env));
+                h.insert("mode", (rcr.mode as u8).encode(env));
+                h.insert("last_known_routing_table_id", rcr.last_known_routing_table_id.encode(env));
+                h.insert("last_known_epoch", rcr.last_known_epoch.encode(env));
+                
+                Ok(h.encode(env)) 
             } else if destination.eq("peer.route.update".as_bytes()) {
                 Ok(custom_atoms::update().encode(env))
             } else {
@@ -60,35 +68,6 @@ fn decode<'a>(env: Env<'a>, bin: Binary) -> NifResult<Term<'a>> {
     
     
 }
-
-
-
-
-    //         // let destination = p.destination();
-    //         // if destination == *CCP_CONTROL_DESTINATION {
-    //         //     Ok(custom_atoms::control().encode(env)) 
-    //         // } else if destination == *CCP_UPDATE_DESTINATION {
-    //         //     Ok(custom_atoms::update().encode(env))
-    //         // } else {
-    //             Ok(error().encode(env)) 
-            // }
-
-
-    //         // match p.destination() {
-    //         //     Packet::CCP_UPDATE_DESTINATION => {
-    //         //         Ok(custom_atoms::update().encode(env)) 
-    //         //     } 
-    //         //     Packet::CCP_CONTROL_DESTINATION => {
-    //         //         Ok(custom_atoms::control().encode(env)) 
-
-    //         //     }
-                
-    //         //     _ => {
-    //         //         Ok(error().encode(env)) 
-    //         //     }Address
-    //         // }
-    //     }
-
 
 
 #[rustler::nif(schedule = "DirtyCpu")]

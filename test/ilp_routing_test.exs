@@ -40,13 +40,7 @@ defmodule IlpRoutingTest do
       "mode" => 0
     })
 
-    assert is_list(IlpRouting.encode(%{
-      "type" => "control_request",
-      "features" => ["aa","bb"],
-      "last_known_epoch" => 32,
-      "last_known_routing_table_id" => [0,1,2,3,4,5,6,7,8,9,1,2,3,4,5,6],
-      "mode" => 0
-    }))
+    assert is_list(IlpRouting.encode(IlpRoutingHelper.control_request))
 
   end
 
@@ -56,8 +50,14 @@ defmodule IlpRoutingTest do
 
   end
 
-  test "encode decode" do
-    assert :update == IlpRoutingHelper.update_request |> IlpRouting.encode |> :binary.list_to_bin() |> IlpRouting.decode
+  test "encode decode control_request" do
+    control_request = IlpRoutingHelper.control_request
+    assert control_request == control_request |> IlpRouting.encode |> :binary.list_to_bin() |> IlpRouting.decode
+  end
+
+  test "encode decode update_request" do
+    update_request = IlpRoutingHelper.update_request
+    assert update_request == update_request |> IlpRouting.encode |> :binary.list_to_bin() |> IlpRouting.decode
   end
 
 end
