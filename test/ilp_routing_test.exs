@@ -52,8 +52,12 @@ defmodule IlpRoutingTest do
 
   test "encode/1 update request" do
 
-    assert is_list(IlpRouting.encode(Test.Support.IlpRouting.update_request))
+    assert is_list(IlpRouting.encode(IlpRoutingHelper.update_request))
 
+  end
+
+  test "encode decode" do
+    assert :update == IlpRoutingHelper.update_request |> IlpRouting.encode |> :binary.list_to_bin() |> IlpRouting.decode
   end
 
 end

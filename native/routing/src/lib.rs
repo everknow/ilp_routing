@@ -43,8 +43,15 @@ macro_rules! error {
 #[rustler::nif(schedule = "DirtyCpu")]
 fn decode<'a>(env: Env<'a>, bin: Binary) -> NifResult<Term<'a>> {
     match Packet::try_from(BytesMut::from(bin.as_slice())) {
-        Ok(Packet::Prepare(_p)) => {
-            err!("it is actually correct")
+        Ok(Packet::Prepare(p)) => {
+            let destination = p.destination();
+            if destination.eq("peer.route.control".as_bytes()) {
+                Ok(custom_atoms::control().encode(env)) 
+            } else if destination.eq("peer.route.update".as_bytes()) {
+                Ok(custom_atoms::update().encode(env))
+            } else {
+                err!("could not decode2")
+            }
         }
         _ => {    
             err!("could not decode")
