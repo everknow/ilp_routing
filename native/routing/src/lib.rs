@@ -1,4 +1,4 @@
-use rustler::types::binary::{Binary};
+use rustler::types::binary::{Binary, OwnedBinary};
 use rustler::{Encoder, Env, Term, NifResult, Error};
 use interledger::packet::{Packet, Address};
 use interledger::ccp::{RouteControlRequest, Mode, ROUTING_TABLE_ID_LEN, RouteUpdateRequest, Route, RouteProp, AUTH_LEN};
@@ -56,6 +56,7 @@ fn decode<'a>(env: Env<'a>, bin: Binary) -> NifResult<Term<'a>> {
                 
                 Ok(h.encode(env)) 
             } else if destination.eq("peer.route.update".as_bytes()) {
+                
                 let rur = RouteUpdateRequest::try_from(&p).or(err!("could not convert prepare into RouteUpdateRequest"))?;
                 
                 let mut h = HashMap::new();
@@ -67,33 +68,35 @@ fn decode<'a>(env: Env<'a>, bin: Binary) -> NifResult<Term<'a>> {
                 h.insert("to_epoch_index", rur.to_epoch_index.encode(env));
                 h.insert("hold_down_time", rur.hold_down_time.encode(env));
                 h.insert("speaker", rur.speaker.encode(env));
-               // h.insert("new_routes",rur.new_routes.encode(env));
+                // h.insert("new_routes",rur.new_routes.encode(env));
 
-               let mut new_routes_result= Vec::new();
+                let mut new_routes_result= Vec::new();
 
-               for route in rur.new_routes {
-                let mut h1= HashMap::new();
-                h1.insert("prefix", route.prefix.encode(env));
-                h1.insert("path", route.path.encode(env));
-                h1.insert("auth", route.auth.encode(env));
-                
+                for route in rur.new_routes {
+                    let mut h1= HashMap::new();
+                    h1.insert("prefix", route.prefix.encode(env));
+                    h1.insert("path", route.path.encode(env));
+                    h1.insert("auth", route.auth.encode(env));
 
-                let mut route_props_result = Vec::new();
-                for route_prop in route.props {
-                let mut h2= HashMap::new();
-                h2.insert("is_optional", route_prop.is_optional.encode(env));
-                h2.insert("is_partial", route_prop.is_partial.encode(env));
-                h2.insert("is_utf8", route_prop.is_utf8.encode(env));
-                h2.insert("is_transitive", route_prop.is_transitive.encode(env));
-                h2.insert("value", route_prop.value.encode(env));
-                h2.insert("id", route_prop.id.encode(env));
-                route_props_result.push(h2);
+
+                    let mut route_props_result = Vec::new();
+                    for route_prop in route.props {
+                        let mut value_bin: OwnedBinary = OwnedBinary::new(route_prop.value.len()).unwrap();
+                        value_bin.as_mut_slice().copy_from_slice(route_prop.value.as_ref());
+                        let mut h2= HashMap::new();
+                        h2.insert("is_optional", route_prop.is_optional.encode(env));
+                        h2.insert("is_partial", route_prop.is_partial.encode(env));
+                        h2.insert("is_utf8", route_prop.is_utf8.encode(env));
+                        h2.insert("is_transitive", route_prop.is_transitive.encode(env));
+                        h2.insert("value", value_bin.release(env).encode(env));
+                        h2.insert("id", route_prop.id.encode(env));
+                        route_props_result.push(h2);
+                    }
+                    h1.insert("props", route_props_result.encode(env));
+                    new_routes_result.push(h1);
                 }
-                h1.insert("props", route_props_result.encode(env));
-                new_routes_result.push(h1);
-               }
-               h.insert("new_routes",new_routes_result.encode(env));
 
+                h.insert("new_routes",new_routes_result.encode(env));
                 h.insert("withdrawn_routes", rur.withdrawn_routes.encode(env));
                 
                 // routing_table_id: [u8; ROUTING_TABLE_ID_LEN],
