@@ -12,7 +12,7 @@ defmodule IlpRoutingHelper do
     "type" => "update_request",
     "routing_table_id" => [0,1,2,3,4,5,6,7,8,9,1,2,3,4,5,6],
     "current_epoch_index" => 30,
-    "lfrom_epoch_index" => 12,
+    "from_epoch_index" => 12,
     "to_epoch_index" => 20,
     "hold_down_time" => 3000,
     "speaker" => "example.aa",

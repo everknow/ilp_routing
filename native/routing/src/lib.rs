@@ -56,7 +56,56 @@ fn decode<'a>(env: Env<'a>, bin: Binary) -> NifResult<Term<'a>> {
                 
                 Ok(h.encode(env)) 
             } else if destination.eq("peer.route.update".as_bytes()) {
-                Ok(custom_atoms::update().encode(env))
+                let rur = RouteUpdateRequest::try_from(&p).or(err!("could not convert prepare into RouteUpdateRequest"))?;
+                
+                let mut h = HashMap::new();
+                
+                h.insert("type", "update_request".encode(env));
+                h.insert("routing_table_id", rur.routing_table_id.encode(env));
+                h.insert("current_epoch_index", rur.current_epoch_index.encode(env));
+                h.insert("from_epoch_index", rur.from_epoch_index.encode(env));
+                h.insert("to_epoch_index", rur.to_epoch_index.encode(env));
+                h.insert("hold_down_time", rur.hold_down_time.encode(env));
+                h.insert("speaker", rur.speaker.encode(env));
+               // h.insert("new_routes",rur.new_routes.encode(env));
+
+               let mut new_routes_result= Vec::new();
+
+               for route in rur.new_routes {
+                let mut h1= HashMap::new();
+                h1.insert("prefix", route.prefix.encode(env));
+                h1.insert("path", route.path.encode(env));
+                h1.insert("auth", route.auth.encode(env));
+                
+
+                let mut route_props_result = Vec::new();
+                for route_prop in route.props {
+                let mut h2= HashMap::new();
+                h2.insert("is_optional", route_prop.is_optional.encode(env));
+                h2.insert("is_partial", route_prop.is_partial.encode(env));
+                h2.insert("is_utf8", route_prop.is_utf8.encode(env));
+                h2.insert("is_transitive", route_prop.is_transitive.encode(env));
+                h2.insert("value", route_prop.value.encode(env));
+                h2.insert("id", route_prop.id.encode(env));
+                route_props_result.push(h2);
+                }
+                h1.insert("props", route_props_result.encode(env));
+                new_routes_result.push(h1);
+               }
+               h.insert("new_routes",new_routes_result.encode(env));
+
+                h.insert("withdrawn_routes", rur.withdrawn_routes.encode(env));
+                
+                // routing_table_id: [u8; ROUTING_TABLE_ID_LEN],
+                //  current_epoch_index: u32,
+                //  from_epoch_index: u32,
+                //  to_epoch_index: u32,
+                //  hold_down_time: u32,
+                //  speaker: Address,
+                //  new_routes: Vec<Route>,
+                //  withdrawn_routes: Vec<String>,
+                
+                Ok(h.encode(env)) 
             } else {
                 err!("could not decode2")
             }
@@ -106,7 +155,7 @@ fn encode<'a>(env: Env<'a>, arg: Term) -> NifResult<Term<'a>> {
             // get fields
             let rti = m.get("routing_table_id").ok_or(error!("update_request > routing_table_id missing"))?;
             let cei = m.get("current_epoch_index").ok_or(error!("update_request > the current epoch index is missing"))?;
-            let fei = m.get("lfrom_epoch_index").ok_or(error!("update_request > the index from the epoch is missing"))?;
+            let fei = m.get("from_epoch_index").ok_or(error!("update_request > the index from the epoch is missing"))?;
             let tei = m.get("to_epoch_index").ok_or(error!("update_request > the index to the epoch is missing"))?;
             let hdt = m.get("hold_down_time").ok_or(error!("update_request > the hold_down_time is missing"))?;
             let s = m.get("speaker").ok_or(error!("update_request > speaker is missing"))?;
@@ -135,7 +184,7 @@ fn encode<'a>(env: Env<'a>, arg: Term) -> NifResult<Term<'a>> {
                 let prefix = nr_pre.decode::<String>().or(err!("could not decode new_routes > prefix"))?;
                 let path = nr_pat.decode::<Vec<String>>().or(err!("could not decode new_routes > path"))?;
                 let auths = nr_aut.decode::<Vec<u8>>().or(err!("could not decode new_routes > auth"))?;
-                let auth =  <[u8; AUTH_LEN]>::try_from(auths).or(err!("could not convert auth to list of bytes of size ROUTING_TABLE_ID_LEN"))?; //Here
+                let auth =  <[u8; AUTH_LEN]>::try_from(auths).or(err!("could not convert auth to list of bytes of size ROUTING_TABLE_ID_LEN"))?; 
                 let nr_prms = nr_prs.decode::<Vec<HashMap<String, Term>>>().or(err!("could not decode new_routes > props map"))?;
                 
                 let mut props = Vec::with_capacity(nr_prms.len());
