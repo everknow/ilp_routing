@@ -1,61 +1,15 @@
+//use bytes::BytesMut;
 use rustler::types::atom::{error};
 use rustler::types::binary::{Binary};
 use rustler::{Encoder, Env, Term, NifResult, Error};
 use interledger::packet::{Address};
 use interledger::ccp::{RouteControlRequest, Mode, ROUTING_TABLE_ID_LEN, RouteUpdateRequest, Route, RouteProp, AUTH_LEN};
-use bytes:: Bytes;
+use bytes::Bytes;
 use std::convert::TryFrom;
-// use once_cell::sync::Lazy;
 use std::str::FromStr;
 use std::collections::HashMap;
 use std::boxed::Box;
-// use std::time::{Duration, SystemTime};
-
-// pub static CCP_CONTROL_DESTINATION: Lazy<Address> =
-//     Lazy::new(|| Address::from_str("peer.route.control").unwrap());
-// pub static CCP_UPDATE_DESTINATION: Lazy<Address> =
-//     Lazy::new(|| Address::from_str("peer.route.update").unwrap());
-// pub const PEER_PROTOCOL_CONDITION: [u8; 32] = [
-//     102, 104, 122, 173, 248, 98, 189, 119, 108, 143, 193, 139, 142, 159, 142, 32, 8, 151, 20, 133,
-//     110, 226, 51, 179, 144, 42, 89, 29, 13, 95, 41, 37,
-// ];
-
-#[rustler::nif(schedule = "DirtyCpu")]
-fn decode<'a>(env: Env<'a>, _bin: Binary) -> NifResult<Term<'a>> {
-    // match Packet::try_from(BytesMut::from(bin.as_slice())) {
-    //     Ok(Packet::Prepare(_p)) => {
-            
-    //         // let destination = p.destination();
-    //         // if destination == *CCP_CONTROL_DESTINATION {
-    //         //     Ok(custom_atoms::control().encode(env)) 
-    //         // } else if destination == *CCP_UPDATE_DESTINATION {
-    //         //     Ok(custom_atoms::update().encode(env))
-    //         // } else {
-    //             Ok(error().encode(env)) 
-    //         // }
-
-
-    //         // match p.destination() {
-    //         //     Packet::CCP_UPDATE_DESTINATION => {
-    //         //         Ok(custom_atoms::update().encode(env)) 
-    //         //     } 
-    //         //     Packet::CCP_CONTROL_DESTINATION => {
-    //         //         Ok(custom_atoms::control().encode(env)) 
-
-    //         //     }
-                
-    //         //     _ => {
-    //         //         Ok(error().encode(env)) 
-    //         //     }Address
-    //         // }
-    //     }
-    //     _ => {    
-            Ok(error().encode(env))
-        // }
-    // }
-    
-    
-}
+//use tracing::debug;
 
 // #[macro_export]
 macro_rules! err {
@@ -76,6 +30,110 @@ macro_rules! error {
         }
     };
 }
+
+
+
+#[rustler::nif(schedule = "DirtyCpu")]
+fn decode_control<'a>(env: Env<'a>, bin: Binary) -> NifResult<Term<'a>> {
+    match RouteControlRequest::try_from_data(bin.as_slice()) {
+        Ok(RouteControlRequest {
+            mode,
+            last_known_routing_table_id,
+            last_known_epoch,
+            features,
+        }) => {
+            let mut result: HashMap<String, Term> = HashMap::new(); 
+            result.insert("type".to_string(), "control_request".encode(env));
+            result.insert("features".to_string(), features.encode(env));
+            result.insert("last_known_routing_table_id".to_string(), last_known_routing_table_id.encode(env) );
+            result.insert("last_known_epoch".to_string(), last_known_epoch.encode(env) );
+            match mode {
+                Mode::Idle => result.insert("mode".to_string(), (0 as u8).encode(env) ),
+                Mode::Sync => result.insert("mode".to_string(), (1 as u8).encode(env) ),
+            };
+
+            Ok(result.encode(env))
+         }
+
+        //Err(CcpPacketError::Oer(error_message)) =>
+        //    Err(error_message.encode(env))
+
+        _ => Ok(error().encode(env))
+    }
+}
+
+#[rustler::nif(schedule = "DirtyCpu")]
+fn decode_update<'a>(env: Env<'a>, bin: Binary) -> NifResult<Term<'a>> {
+    match RouteUpdateRequest::try_from_data(bin.as_slice()) {
+        Ok(RouteUpdateRequest {
+            routing_table_id,
+            current_epoch_index,
+            from_epoch_index,
+            to_epoch_index,
+            hold_down_time,
+            speaker,
+            new_routes,
+            withdrawn_routes,
+        }) => { 
+            let mut result: HashMap<String, Term> = HashMap::new(); 
+            result.insert("type".to_string(), "update_request".encode(env));
+            result.insert("routing_table_id".to_string(), routing_table_id.encode(env));
+            result.insert("current_epoch_index".to_string(), current_epoch_index.encode(env));
+            result.insert("from_epoch_index".to_string(), from_epoch_index.encode(env));
+            result.insert("to_epoch_index".to_string(), to_epoch_index.encode(env));
+            result.insert("hold_down_time".to_string(), hold_down_time.encode(env));
+            result.insert("speaker".to_string(), speaker.encode(env));
+            result.insert("new_routes".to_string(), encode_routes(env, new_routes).encode(env));
+            result.insert("withdrawn_routes".to_string(), withdrawn_routes.encode(env));
+
+            Ok(result.encode(env))
+        }
+
+        _ => Ok(error().encode(env))
+    }
+}
+
+fn encode_routes<'a>(env: Env<'a>, routes: Vec<Route>) -> Vec<HashMap<String, Term>> {
+    let mut result = Vec::new();
+    for route in routes {
+        let route_result: HashMap<String, Term> = encode_route(env, route);
+        result.push(route_result);
+    };
+
+    return result;
+}
+
+fn encode_route<'a>(env: Env<'a>, route: Route) -> HashMap<String, Term> {
+        let mut result: HashMap<String, Term> = HashMap::new();
+        
+        result.insert("prefix".to_string(), route.prefix.encode(env));
+        result.insert("path".to_string(), route.path.encode(env));
+        result.insert("auth".to_string(), route.auth.encode(env));
+        //result.insert("props".to_string(), route.props);
+        
+        let mut props: Vec<HashMap<String, Term>> = Vec::new();
+
+        for prop in route.props {
+            props.push(encode_route_prop(env, prop));
+        };
+
+        result.insert("props".to_string(), props.encode(env));
+
+        return result;
+    }
+
+fn encode_route_prop<'a>(env: Env<'a>, route_prop: RouteProp) -> HashMap<String, Term> { 
+        let mut result: HashMap<String, Term> = HashMap::new();
+        
+        result.insert("is_optional".to_string(), route_prop.is_optional.encode(env));
+        result.insert("is_transitive".to_string(), route_prop.is_transitive.encode(env));
+        result.insert("is_partial".to_string(), route_prop.is_partial.encode(env));
+        result.insert("id".to_string(), route_prop.id.encode(env));
+        result.insert("is_utf8".to_string(), route_prop.is_utf8.encode(env));
+        result.insert("value".to_string(), route_prop.value.encode(env));
+        
+        return result;
+    }
 
 #[rustler::nif(schedule = "DirtyCpu")]
 fn encode<'a>(env: Env<'a>, arg: Term) -> NifResult<Term<'a>> {
@@ -106,14 +164,14 @@ fn encode<'a>(env: Env<'a>, arg: Term) -> NifResult<Term<'a>> {
                 last_known_routing_table_id,
                 mode,
             };
-            Ok(p.to_prepare().as_ref().encode(env))
+            Ok(p.to_data().encode(env))
         }
         
         "update_request" => {
             // get fields
             let rti = m.get("routing_table_id").ok_or(error!("update_request > routing_table_id missing"))?;
             let cei = m.get("current_epoch_index").ok_or(error!("update_request > the current epoch index is missing"))?;
-            let fei = m.get("lfrom_epoch_index").ok_or(error!("update_request > the index from the epoch is missing"))?;
+            let fei = m.get("from_epoch_index").ok_or(error!("update_request > the index from the epoch is missing"))?;
             let tei = m.get("to_epoch_index").ok_or(error!("update_request > the index to the epoch is missing"))?;
             let hdt = m.get("hold_down_time").ok_or(error!("update_request > the hold_down_time is missing"))?;
             let s = m.get("speaker").ok_or(error!("update_request > speaker is missing"))?;
@@ -163,7 +221,7 @@ fn encode<'a>(env: Env<'a>, arg: Term) -> NifResult<Term<'a>> {
                     let is_partial = is_par.decode::<bool>().or(err!("could not decode new_routes > route_props > is_partial"))?;
                     let is_utf8 = is_utf8.decode::<bool>().or(err!("could not decode new_routes > route_props > is_utf8"))?;
                     let is_transitive = is_tran.decode::<bool>().or(err!("could not decode new_routes > route_props > is_transitive"))?;
-                    let valu = val.into_binary().or(err!("expected valu to be binary"))?.as_slice(); 
+                    let valu = val.into_binary().or(err!("expected value to be binary"))?.as_slice(); 
                     let value = Bytes::copy_from_slice(valu);
                     let id = an_id.decode::<u16>().or(err!("could not decode new_routes > route_props > id"))?;
 
@@ -205,7 +263,7 @@ fn encode<'a>(env: Env<'a>, arg: Term) -> NifResult<Term<'a>> {
                 new_routes,
                 withdrawn_routes,
             };
-            Ok(p.to_prepare().as_ref().encode(env))
+            Ok(p.to_data().encode(env))
         }
         
         _ => {
@@ -226,5 +284,5 @@ mod custom_atoms {
     }
 }
 
-rustler::init!("Elixir.IlpRouting", [decode, encode]);
+rustler::init!("Elixir.IlpRouting", [decode_control, decode_update, encode]);
 
